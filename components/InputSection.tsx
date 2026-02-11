@@ -1,0 +1,248 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface InputSectionProps {
+  onValidate: (entries: { companyName: string; url: string }[]) => void;
+  isProcessing: boolean;
+}
+
+export default function InputSection({ onValidate, isProcessing }: InputSectionProps) {
+  const [activeTab, setActiveTab] = useState<"manual" | "csv" | "bulk">("csv");
+  const [companyName, setCompanyName] = useState("");
+  const [url, setUrl] = useState("");
+  const [bulkText, setBulkText] = useState("");
+
+  const handleManualSubmit = () => {
+    if (companyName && url) {
+      onValidate([{ companyName, url }]);
+      setCompanyName("");
+      setUrl("");
+    }
+  };
+
+  const handleBulkSubmit = () => {
+    const lines = bulkText.trim().split("\n");
+    const entries = lines
+      .map(line => {
+        const [companyName, url] = line.split(",").map(s => s.trim());
+        return companyName && url ? { companyName, url } : null;
+      })
+      .filter(Boolean) as { companyName: string; url: string }[];
+    
+    if (entries.length > 0) {
+      onValidate(entries);
+      setBulkText("");
+    }
+  };
+
+  const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").slice(1);
+      const entries = lines
+        .map(line => {
+          const [companyName, url] = line.split(",").map(s => s.trim());
+          return companyName && url ? { companyName, url } : null;
+        })
+        .filter(Boolean) as { companyName: string; url: string }[];
+      
+      if (entries.length > 0) {
+        onValidate(entries);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="relative w-full max-w-5xl mx-auto">
+      {/* Simple liquid stream flowing down */}
+      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none -top-64 w-32 h-64">
+        {/* Main stream */}
+        <div className="absolute left-1/2 -translate-x-1/2 w-20 h-full bg-gradient-to-b from-emerald-500/0 via-emerald-500/40 to-emerald-500/60 blur-xl"></div>
+        <div className="absolute left-1/2 -translate-x-1/2 w-8 h-full bg-gradient-to-b from-emerald-400/0 via-emerald-400/60 to-emerald-500/80 blur-sm"></div>
+        
+        {/* Flowing liquid droplets - commented out */}
+        {/* {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute left-1/2 -translate-x-1/2"
+            animate={{
+              y: [0, 256],
+              opacity: [0, 1, 1, 0],
+              scale: [0.8, 1, 1, 0.6],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: i * 0.2,
+              ease: "linear",
+            }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full blur-md opacity-60"></div>
+              <div className="relative w-2 h-2 bg-emerald-400 rounded-full shadow-lg shadow-emerald-400/80 blur-[0.5px]"></div>
+            </div>
+          </motion.div>
+        ))} */}
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative"
+      >
+        {/* Glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-green-500/20 to-emerald-500/20 rounded-2xl blur-xl"></div>
+        
+        <div className="relative bg-gradient-to-b from-zinc-900/95 to-black/95 backdrop-blur-2xl border border-emerald-500/20 rounded-2xl p-6">
+          {/* Tabs at top */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex gap-2">
+              {[
+                { id: "csv", label: "CSV Upload" },
+                { id: "manual", label: "Manual" },
+                { id: "bulk", label: "Bulk Paste" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+                    activeTab === tab.id
+                      ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30"
+                      : "text-gray-400 hover:text-gray-300 hover:bg-white/5"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="min-h-[120px] flex items-center">
+            {/* CSV Upload */}
+            {activeTab === "csv" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full"
+              >
+                <div className="flex flex-col md:flex-row gap-4 items-center">
+                  <div className="flex-1 w-full">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCSVUpload}
+                      disabled={isProcessing}
+                      className="hidden"
+                      id="csv-upload"
+                    />
+                    <label
+                      htmlFor="csv-upload"
+                      className="flex items-center gap-4 p-5 border-2 border-dashed border-emerald-500/30 rounded-xl hover:border-emerald-500/50 transition-all cursor-pointer bg-black/20 group"
+                    >
+                      <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all flex-shrink-0">
+                        <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-semibold mb-1">
+                          Drop CSV file or click to upload
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Format: company_name, url
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <a
+                    href="/sample-companies.csv"
+                    download
+                    className="flex items-center gap-2 px-6 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Sample CSV
+                  </a>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Manual Entry */}
+            {activeTab === "manual" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full flex flex-col md:flex-row gap-3"
+              >
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Company Name"
+                  className="flex-1 px-5 py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                />
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="flex-1 px-5 py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleManualSubmit}
+                  disabled={isProcessing || !companyName || !url}
+                  className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-black font-bold rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-emerald-500/50 transition-all whitespace-nowrap"
+                >
+                  {isProcessing ? "Processing..." : "Validate"}
+                </motion.button>
+              </motion.div>
+            )}
+
+            {/* Bulk Paste */}
+            {activeTab === "bulk" && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full flex flex-col md:flex-row gap-3"
+              >
+                <textarea
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  placeholder="Acme Corp, https://acme.com&#10;Tech Inc, https://techinc.io&#10;StartupXYZ, https://startupxyz.com"
+                  rows={4}
+                  className="flex-1 px-5 py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 font-mono text-sm transition-all resize-none"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleBulkSubmit}
+                  disabled={isProcessing || !bulkText.trim()}
+                  className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-black font-bold rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-emerald-500/50 transition-all whitespace-nowrap self-end"
+                >
+                  {isProcessing ? "Processing..." : "Validate All"}
+                </motion.button>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
