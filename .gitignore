@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Vercel
 .vercel
+
+
+#md files
+*.md
+#except readme.md
+!README.md
