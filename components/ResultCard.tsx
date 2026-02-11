@@ -10,20 +10,21 @@ interface ResultCardProps {
 
 export default function ResultCard({ result }: ResultCardProps) {
   const getStatusColor = () => {
-    if (result.status === "processing") return "border-yellow-500/40 bg-yellow-500/5";
+    if (result.status === "processing" || result.status === "retrying") return "border-yellow-500/40 bg-yellow-500/5";
     if (result.status === "success" && result.isReachable) return "border-green-500/40 bg-green-500/5";
     if (result.status === "success" && !result.isReachable) return "border-red-500/40 bg-red-500/5";
+    if (result.status === "error") return "border-red-500/40 bg-red-500/5";
     return "border-emerald-500/20 bg-white/5";
   };
 
   const getStatusIndicator = () => {
-    if (result.status === "processing") {
+    if (result.status === "processing" || result.status === "retrying") {
       return <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500 animate-pulse" />;
     }
     if (result.status === "success" && result.isReachable) {
       return <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500" />;
     }
-    if (result.status === "success" && !result.isReachable) {
+    if (result.status === "error" || (result.status === "success" && !result.isReachable)) {
       return <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500" />;
     }
     return <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-gray-500" />;
@@ -47,10 +48,12 @@ export default function ResultCard({ result }: ResultCardProps) {
           </div>
           <p className="text-xs sm:text-sm text-gray-400 truncate font-mono">{result.url}</p>
         </div>
-        {result.status === "processing" && (
+        {(result.status === "processing" || result.status === "retrying") && (
           <div className="flex items-center gap-1.5 sm:gap-2 text-yellow-400 text-xs sm:text-sm flex-shrink-0">
             <div className="animate-spin w-4 h-4 sm:w-5 sm:h-5 border-2 border-yellow-400 border-t-transparent rounded-full" />
-            <span className="hidden sm:inline">Processing</span>
+            <span className="hidden sm:inline">
+              {result.status === "retrying" ? `Retrying (${result.retryCount}/2)` : "Processing"}
+            </span>
           </div>
         )}
       </div>

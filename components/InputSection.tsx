@@ -42,21 +42,109 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (5MB limit)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File size exceeds 5MB limit. Please upload a smaller file.\nCurrent size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      alert('Please upload a CSV file (.csv extension)');
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
+    
+    reader.onerror = () => {
+      alert('Error reading file. Please try again.');
+      e.target.value = '';
+    };
+
     reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split("\n").slice(1);
-      const entries = lines
-        .map(line => {
-          const [companyName, url] = line.split(",").map(s => s.trim());
-          return companyName && url ? { companyName, url } : null;
-        })
-        .filter(Boolean) as { companyName: string; url: string }[];
-      
-      if (entries.length > 0) {
-        onValidate(entries);
+      try {
+        const text = event.target?.result as string;
+        
+        if (!text || text.trim().length === 0) {
+          alert('CSV file is empty. Please upload a file with data.');
+          e.target.value = '';
+          return;
+        }
+
+        // Parse CSV with proper handling of quoted fields and edge cases
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        
+        if (lines.length < 2) {
+          alert('CSV file must contain a header row and at least one data row.');
+          e.target.value = '';
+          return;
+        }
+
+        // Skip header row
+        const dataLines = lines.slice(1);
+        
+        const entries = dataLines
+          .map((line, index) => {
+            // Handle quoted fields (e.g., "Company, Inc", "https://example.com")
+            const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+            
+            if (!matches || matches.length < 2) {
+              console.warn(`Skipping invalid row ${index + 2}: ${line}`);
+              return null;
+            }
+
+            const companyName = matches[0].replace(/^"|"$/g, '').trim();
+            const url = matches[1].replace(/^"|"$/g, '').trim();
+
+            // Validate entries
+            if (!companyName || !url) {
+              console.warn(`Skipping incomplete row ${index + 2}: missing company name or URL`);
+              return null;
+            }
+
+            // Basic URL validation
+            if (!url.match(/^(https?:\/\/)?[\w\-]+(\.[\w\-]+)+/)) {
+              console.warn(`Skipping invalid URL in row ${index + 2}: ${url}`);
+              return null;
+            }
+
+            return { companyName, url };
+          })
+          .filter(Boolean) as { companyName: string; url: string }[];
+        
+        if (entries.length === 0) {
+          alert('No valid entries found in CSV. Please check the format:\ncompany_name, url');
+          e.target.value = '';
+          return;
+        }
+
+        // Limit number of entries to prevent overwhelming the system
+        const MAX_ENTRIES = 100;
+        if (entries.length > MAX_ENTRIES) {
+          const proceed = confirm(
+            `CSV contains ${entries.length} entries. Only the first ${MAX_ENTRIES} will be processed.\n\nContinue?`
+          );
+          if (!proceed) {
+            e.target.value = '';
+            return;
+          }
+          onValidate(entries.slice(0, MAX_ENTRIES));
+        } else {
+          onValidate(entries);
+        }
+
+        // Reset input for next upload
+        e.target.value = '';
+      } catch (error) {
+        console.error('CSV parsing error:', error);
+        alert('Error parsing CSV file. Please check the format and try again.');
+        e.target.value = '';
       }
     };
+
     reader.readAsText(file);
   };
 
