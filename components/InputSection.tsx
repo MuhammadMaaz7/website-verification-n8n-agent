@@ -62,35 +62,66 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
 
   return (
     <div className="relative w-full max-w-5xl mx-auto">
-      {/* Simple liquid stream flowing down */}
-      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none -top-64 w-32 h-64">
-        {/* Main stream */}
-        <div className="absolute left-1/2 -translate-x-1/2 w-20 h-full bg-gradient-to-b from-emerald-500/0 via-emerald-500/40 to-emerald-500/60 blur-xl"></div>
-        <div className="absolute left-1/2 -translate-x-1/2 w-8 h-full bg-gradient-to-b from-emerald-400/0 via-emerald-400/60 to-emerald-500/80 blur-sm"></div>
+      {/* Liquid stream flowing from header */}
+      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none -top-64 w-32 h-64 overflow-visible">
+        {/* Main flowing stream with organic movement */}
+        <motion.div
+          className="absolute left-1/2 -translate-x-1/2 w-24 h-full"
+          animate={{
+            scaleX: [1, 1.1, 0.95, 1.05, 1],
+            x: [-2, 2, -1, 1, -2],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/0 via-emerald-500/30 to-emerald-500/50 blur-2xl"></div>
+        </motion.div>
         
-        {/* Flowing liquid droplets - commented out */}
-        {/* {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute left-1/2 -translate-x-1/2"
-            animate={{
-              y: [0, 256],
-              opacity: [0, 1, 1, 0],
-              scale: [0.8, 1, 1, 0.6],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: i * 0.2,
-              ease: "linear",
-            }}
-          >
-            <div className="relative">
-              <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full blur-md opacity-60"></div>
-              <div className="relative w-2 h-2 bg-emerald-400 rounded-full shadow-lg shadow-emerald-400/80 blur-[0.5px]"></div>
-            </div>
-          </motion.div>
-        ))} */}
+        <motion.div
+          className="absolute left-1/2 -translate-x-1/2 w-12 h-full"
+          animate={{
+            scaleX: [1, 0.9, 1.1, 0.95, 1],
+            x: [1, -2, 2, -1, 1],
+          }}
+          transition={{
+            duration: 3.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-400/0 via-emerald-400/50 to-emerald-500/70 blur-md"></div>
+        </motion.div>
+
+        {/* Flowing particles that follow the stream */}
+        {[...Array(12)].map((_, i) => {
+          const offsetX = Math.sin(i * 0.5) * 15 - 7.5;
+          const offsetX2 = Math.sin(i * 0.5 + 1) * 20 - 10;
+          const offsetX3 = Math.sin(i * 0.5 + 2) * 15 - 7.5;
+          
+          return (
+            <motion.div
+              key={i}
+              className="absolute left-1/2 -translate-x-1/2"
+              animate={{
+                y: [0, 280],
+                opacity: [0, 0.6, 0.8, 0.6, 0],
+                scale: [0.5, 1, 1.2, 1, 0.5],
+                x: [offsetX, offsetX2, offsetX3],
+              }}
+              transition={{
+                duration: 2.5 + i * 0.15,
+                repeat: Infinity,
+                delay: i * 0.2,
+                ease: "easeInOut",
+              }}
+            >
+              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full blur-[1px] shadow-lg shadow-emerald-400/60"></div>
+            </motion.div>
+          );
+        })}
       </div>
 
       <motion.div
@@ -98,7 +129,71 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
         animate={{ opacity: 1, y: 0 }}
         className="relative"
       >
-        {/* Glow effect */}
+        {/* Smooth flowing glow on top edge - heavily blurred, no defined shapes */}
+        <div className="absolute -top-6 left-1/5 right-1/6 h-5 pointer-events-none">
+          {/* Multiple layers of flowing blur for organic effect */}
+          <motion.div
+            className="absolute inset-0 blur-3xl opacity-40"
+            animate={{
+              x: ["-30%", "30%", "-30%"],
+              scale: [1, 1.1, 1],
+            }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+          </motion.div>
+
+          <motion.div
+            className="absolute inset-0 blur-2xl opacity-30"
+            animate={{
+              x: ["30%", "-30%", "30%"],
+              scale: [1.1, 1, 1.1],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5,
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
+          </motion.div>
+
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full blur-xl opacity-50"
+            animate={{
+              scale: [1, 1.3, 1],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/60 via-emerald-500/30 to-transparent rounded-full"></div>
+          </motion.div>
+        </div>
+
+        {/* Subtle pulsing glow around component */}
+        <motion.div
+          className="absolute -inset-1 rounded-2xl blur-2xl"
+          animate={{
+            opacity: [0.2, 0.35, 0.2],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/25 via-emerald-500/10 to-transparent rounded-2xl"></div>
+        </motion.div>
+
+        {/* Base glow effect */}
         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-green-500/20 to-emerald-500/20 rounded-2xl blur-xl"></div>
         
         <div className="relative bg-gradient-to-b from-zinc-900/95 to-black/95 backdrop-blur-2xl border border-emerald-500/20 rounded-2xl p-6">
