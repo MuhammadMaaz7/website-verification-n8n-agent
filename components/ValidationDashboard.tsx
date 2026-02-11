@@ -36,8 +36,14 @@ export default function ValidationDashboard() {
   };
 
   const handleValidation = async (entries: { companyName: string; url: string }[]) => {
+    // Check if backend URL is configured
+    if (!process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL) {
+      showToast("⚠️ Service not configured. Please contact support.", "error");
+      return;
+    }
+
     setIsProcessing(true);
-    showToast(`Starting validation of ${entries.length} ${entries.length === 1 ? 'website' : 'websites'}...`, "info");
+    showToast(`Validating ${entries.length} ${entries.length === 1 ? 'website' : 'websites'}...`, "info");
     
     const newResults: ValidationResult[] = entries.map((entry, idx) => ({
       id: `${Date.now()}-${idx}`,
@@ -66,9 +72,9 @@ export default function ValidationDashboard() {
     const errorCount = results.filter(r => r.status === "error").length;
     
     if (errorCount === 0) {
-      showToast(`✓ All ${entries.length} validations completed successfully!`, "success");
+      showToast(`✓ All validations completed successfully!`, "success");
     } else if (successCount === 0) {
-      showToast(`✕ All validations failed. Please check your connection.`, "error");
+      showToast(`Unable to complete validations. Please try again.`, "error");
     } else {
       showToast(`Completed: ${successCount} successful, ${errorCount} failed`, "warning");
     }
@@ -93,9 +99,13 @@ export default function ValidationDashboard() {
     const startTime = Date.now();
 
     try {
-      // Call n8n webhook or fallback to mock API
-      const apiUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "/api/validate";
+      // Get n8n webhook URL from environment
+      const apiUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
       
+      if (!apiUrl) {
+        throw new Error("SERVICE_NOT_CONFIGURED");
+      }
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -115,13 +125,15 @@ export default function ValidationDashboard() {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Log technical error for debugging
+        console.error(`Backend error ${response.status}:`, await response.text().catch(() => 'Unknown error'));
+        throw new Error("SERVICE_ERROR");
       }
 
       const data = await response.json();
       const responseTime = Date.now() - startTime;
       
-      // Handle both n8n format and mock API format
+      // Handle n8n response format
       const mappedData = mapResponseData(data, responseTime);
       
       setResults(prev =>
@@ -137,22 +149,43 @@ export default function ValidationDashboard() {
       );
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      const isTimeout = error instanceof Error && error.name === 'AbortError';
-      const isNetworkError = error instanceof Error && error.message.includes('fetch');
       
-      // Retry logic for network errors and timeouts
-      if ((isTimeout || isNetworkError) && retryCount < MAX_RETRIES) {
+      // Log technical error for debugging
+      console.error('Validation error:', error);
+      
+      const isTimeout = error instanceof Error && error.name === 'AbortError';
+      const isNetworkError = error instanceof Error && (
+        error.message.includes('fetch') || 
+        error.message.includes('network') ||
+        error.message.includes('Failed to fetch')
+      );
+      const isConfigError = error instanceof Error && error.message === 'SERVICE_NOT_CONFIGURED';
+      
+      // Retry logic for network errors and timeouts (not config or service errors)
+      if ((isTimeout || isNetworkError) && retryCount < MAX_RETRIES && !isConfigError) {
         console.log(`Retrying ${entry.companyName} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
         return processWithRetry(index, entry, retryCount + 1);
       }
 
-      // Final error state
-      const errorMessage = isTimeout 
-        ? "Request timed out after 30 seconds"
-        : error instanceof Error 
-          ? error.message 
-          : "Validation failed";
+      // User-friendly error messages
+      let userMessage = "Unable to validate this website";
+      
+      if (isConfigError) {
+        userMessage = "Service not configured";
+      } else if (isTimeout) {
+        userMessage = "Validation is taking too long. Please try again.";
+      } else if (isNetworkError) {
+        userMessage = "Connection issue. Please check your internet.";
+      } else if (error instanceof Error && error.message === 'SERVICE_ERROR') {
+        userMessage = "Service temporarily unavailable";
+      } else if (error instanceof Error && error.message.includes('Invalid response')) {
+        userMessage = "Received unexpected response";
+      }
+
+      if (retryCount > 0) {
+        userMessage += ` (tried ${retryCount + 1} ${retryCount === 0 ? 'time' : 'times'})`;
+      }
 
       setResults(prev =>
         prev.map((r, idx) =>
@@ -160,7 +193,7 @@ export default function ValidationDashboard() {
             ? {
                 ...r,
                 status: "error",
-                error: errorMessage + (retryCount > 0 ? ` (after ${retryCount} retries)` : ''),
+                error: userMessage,
                 responseTime,
                 isReachable: false,
                 brandPresence: 0,
@@ -173,52 +206,54 @@ export default function ValidationDashboard() {
 
   // Map n8n response format to frontend format
   const mapResponseData = (data: any, responseTime: number) => {
-    // Check if it's n8n format (has 'data' array)
-    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-      const item = data.data[0];
-      return {
-        isReachable: item.status?.live ?? false,
-        redirectUrl: item.technical?.redirected ? item.technical?.final_url : undefined,
-        brandPresence: item.status?.confidence ?? 0,
-        responseTime: responseTime,
-        error: item.verdict === "SUCCESS" ? undefined : item.ai_evidence,
-      };
+    try {
+      // n8n format (has 'data' array)
+      if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+        const item = data.data[0];
+        return {
+          isReachable: item.status?.live ?? false,
+          redirectUrl: item.technical?.redirected ? item.technical?.final_url : undefined,
+          brandPresence: item.status?.confidence ?? 0,
+          responseTime: responseTime,
+          error: item.verdict === "SUCCESS" ? undefined : item.ai_evidence,
+        };
+      }
+      
+      // Alternative n8n format (direct fields)
+      if (data.verification_results) {
+        return {
+          isReachable: data.verification_results?.is_live ?? false,
+          redirectUrl: data.technical_metadata?.redirect_detected 
+            ? data.technical_metadata?.final_url 
+            : undefined,
+          brandPresence: data.ai_insight?.confidence ?? 0,
+          responseTime: responseTime,
+          error: data.error,
+        };
+      }
+      
+      // Log unexpected format for debugging
+      console.error('Unexpected response format:', data);
+      throw new Error("Invalid response format from backend. Please check n8n workflow configuration.");
+    } catch (error) {
+      console.error('Response mapping error:', error);
+      throw new Error("Invalid response format");
     }
-    
-    // Check if it's already in the correct format (mock API)
-    if (data.isReachable !== undefined) {
-      return {
-        isReachable: data.isReachable,
-        redirectUrl: data.redirectUrl,
-        brandPresence: data.brandPresence,
-        responseTime: data.responseTime ?? responseTime,
-        error: data.error,
-      };
-    }
-    
-    // Fallback: try to extract what we can
-    return {
-      isReachable: data.verification_results?.is_live ?? false,
-      redirectUrl: data.technical_metadata?.redirect_detected 
-        ? data.technical_metadata?.final_url 
-        : undefined,
-      brandPresence: data.ai_insight?.confidence ?? 0,
-      responseTime: responseTime,
-      error: data.error,
-    };
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6 lg:space-y-8">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      {results.length > 0 ? (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-          <InputSection onValidate={handleValidation} isProcessing={isProcessing} />
+      
+      {/* Input Section - Always visible at top */}
+      <div className="w-full max-w-5xl mx-auto">
+        <InputSection onValidate={handleValidation} isProcessing={isProcessing} />
+      </div>
+
+      {/* Results Section - Shows below input when available */}
+      {results.length > 0 && (
+        <div className="w-full max-w-7xl mx-auto">
           <ResultsSection results={results} />
-        </div>
-      ) : (
-        <div className="max-w-4xl mx-auto">
-          <InputSection onValidate={handleValidation} isProcessing={isProcessing} />
         </div>
       )}
     </div>

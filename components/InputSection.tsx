@@ -284,10 +284,10 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
         {/* Base glow effect */}
         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-green-500/20 to-emerald-500/20 rounded-2xl blur-xl"></div>
         
-        <div className="relative bg-gradient-to-b from-zinc-900/95 to-black/95 backdrop-blur-2xl border border-emerald-500/20 rounded-2xl p-6">
+        <div className="relative bg-gradient-to-b from-zinc-900/95 to-black/95 backdrop-blur-2xl border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6">
           {/* Tabs at top */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-2">
+          <div className="flex items-center justify-between mb-4 sm:mb-5 md:mb-6">
+            <div className="flex gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide">
               {[
                 { id: "csv", label: "CSV Upload" },
                 { id: "manual", label: "Manual" },
@@ -297,7 +297,7 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+                    "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0",
                     activeTab === tab.id
                       ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/30"
                       : "text-gray-400 hover:text-gray-300 hover:bg-white/5"
@@ -310,7 +310,7 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
           </div>
 
           {/* Content */}
-          <div className="min-h-[120px] flex items-center">
+          <div className="min-h-[140px] sm:min-h-[120px] flex items-center">
             {/* CSV Upload */}
             {activeTab === "csv" && (
               <motion.div
@@ -319,7 +319,7 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                 transition={{ duration: 0.3 }}
                 className="w-full"
               >
-                <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex flex-col gap-3 sm:gap-4 items-center">
                   <div className="flex-1 w-full">
                     <input
                       type="file"
@@ -331,18 +331,18 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                     />
                     <label
                       htmlFor="csv-upload"
-                      className="flex items-center gap-4 p-5 border-2 border-dashed border-emerald-500/30 rounded-xl hover:border-emerald-500/50 transition-all cursor-pointer bg-black/20 group"
+                      className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 border-2 border-dashed border-emerald-500/30 rounded-xl hover:border-emerald-500/50 transition-all cursor-pointer bg-black/20 group"
                     >
-                      <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all flex-shrink-0">
-                        <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all flex-shrink-0">
+                        <svg className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-white font-semibold mb-1">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold mb-1 text-sm sm:text-base">
                           Drop CSV file or click to upload
                         </p>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-xs sm:text-sm text-gray-400 truncate">
                           Format: company_name, url
                         </p>
                       </div>
@@ -352,9 +352,9 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                   <a
                     href="/sample-companies.csv"
                     download
-                    className="flex items-center gap-2 px-6 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
+                    className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap w-full sm:w-auto justify-center"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                     Sample CSV
@@ -369,28 +369,28 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="w-full flex flex-col md:flex-row gap-3"
+                className="w-full flex flex-col gap-3"
               >
                 <input
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Company Name"
-                  className="flex-1 px-5 py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm sm:text-base"
                 />
                 <input
                   type="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://example.com"
-                  className="flex-1 px-5 py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm sm:text-base"
                 />
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleManualSubmit}
                   disabled={isProcessing || !companyName || !url}
-                  className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-black font-bold rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-emerald-500/50 transition-all whitespace-nowrap"
+                  className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-emerald-500/50 transition-all text-sm sm:text-base"
                 >
                   {isProcessing ? "Processing..." : "Validate"}
                 </motion.button>
@@ -403,21 +403,21 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="w-full flex flex-col md:flex-row gap-3"
+                className="w-full flex flex-col gap-3"
               >
                 <textarea
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
                   placeholder="Acme Corp, https://acme.com&#10;Tech Inc, https://techinc.io&#10;StartupXYZ, https://startupxyz.com"
                   rows={4}
-                  className="flex-1 px-5 py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 font-mono text-sm transition-all resize-none"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-black/50 border border-emerald-500/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 font-mono text-xs sm:text-sm transition-all resize-none"
                 />
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleBulkSubmit}
                   disabled={isProcessing || !bulkText.trim()}
-                  className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-black font-bold rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-emerald-500/50 transition-all whitespace-nowrap self-end"
+                  className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-emerald-500/50 transition-all text-sm sm:text-base"
                 >
                   {isProcessing ? "Processing..." : "Validate All"}
                 </motion.button>

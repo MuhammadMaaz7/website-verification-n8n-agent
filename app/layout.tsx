@@ -13,8 +13,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Modern Next.js App",
-  description: "Next.js with animations and Three.js",
+  title: "Website Verification Agent | AI-Powered Brand Validation",
+  description: "Validate website availability, detect redirects, and verify brand presence at scale with AI-powered analysis",
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: '/icon.svg',
+  },
+  openGraph: {
+    title: "Website Verification Agent",
+    description: "AI-Powered Brand Validation & Website Verification",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
