@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import InputSection from "./InputSection";
 import ResultsSection from "./ResultsSection";
 import ToastContainer, { ToastMessage } from "./ToastContainer";
@@ -88,7 +86,21 @@ export default function ValidationDashboard() {
             console.error(`Backend error ${response.status} for ${entry.companyName}`);
             throw new Error("SERVICE_ERROR");
           }
-          return response.json();
+          
+          // Check if response has content
+          const text = await response.text();
+          if (!text || text.trim() === "") {
+            console.error(`Empty response from backend for ${entry.companyName}`);
+            throw new Error("EMPTY_RESPONSE");
+          }
+          
+          // Try to parse JSON
+          try {
+            return JSON.parse(text);
+          } catch (parseError) {
+            console.error(`Invalid JSON response for ${entry.companyName}:`, text);
+            throw new Error("INVALID_JSON");
+          }
         })
         .then((data) => {
           // Unwrap n8n response: could be [{ data: [...] }], { data: [...] }, or direct item
@@ -121,6 +133,8 @@ export default function ValidationDashboard() {
           if (isTimeout) userMessage = "Validation timed out (60s). Please try again.";
           else if (isNetworkError) userMessage = "Connection issue. Please check your internet.";
           else if (error instanceof Error && error.message === "SERVICE_ERROR") userMessage = "Service temporarily unavailable";
+          else if (error instanceof Error && error.message === "EMPTY_RESPONSE") userMessage = "Service returned no data. Please try again.";
+          else if (error instanceof Error && error.message === "INVALID_JSON") userMessage = "Service returned invalid data. Please contact support.";
 
           setResults(prev =>
             prev.map((r, i) =>
@@ -139,10 +153,10 @@ export default function ValidationDashboard() {
     
     // Show completion toast (read latest results via callback)
     setResults(prev => {
-      const successCount = prev.filter(r => r.status === "success").length;
-      const errorCount = prev.filter(r => r.status === "error").length;
+      const successCount = prev.filter(r => r.status === "success" && r.isReachable).length;
+      const errorCount = prev.filter(r => r.status === "error" || (r.status === "success" && !r.isReachable)).length;
 
-      if (errorCount === 0) {
+      if (errorCount === 0 && successCount > 0) {
         showToast(`✓ All validations completed successfully!`, "success");
       } else if (successCount === 0) {
         showToast(`Unable to complete validations. Please try again.`, "error");

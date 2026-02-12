@@ -12,8 +12,8 @@ export default function ResultsSection({ results }: ResultsSectionProps) {
   const stats = {
     total: results.length,
     success: results.filter(r => r.status === "success" && r.isReachable).length,
-    failed: results.filter(r => r.status === "success" && !r.isReachable).length,
-    processing: results.filter(r => r.status === "processing").length,
+    failed: results.filter(r => r.status === "error" || (r.status === "success" && !r.isReachable)).length,
+    processing: results.filter(r => r.status === "processing" || r.status === "retrying" || r.status === "pending").length,
   };
 
   if (results.length === 0) {

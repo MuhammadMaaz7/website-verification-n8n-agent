@@ -24,8 +24,8 @@ export default function Home() {
       {/* Full-screen Light Pillar background */}
       <div className="fixed inset-0 w-full h-full z-0">
         <LightPillar
-          topColor="#5227FF"
-          bottomColor="#10b981"
+          topColor="#10b981"
+          bottomColor="#059669"
           intensity={1}
           rotationSpeed={0.3}
           glowAmount={0.002}

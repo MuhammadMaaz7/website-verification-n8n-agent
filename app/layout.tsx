@@ -5,10 +5,7 @@ export const metadata: Metadata = {
   title: "Website Verification Agent | AI-Powered Brand Validation",
   description: "Validate website availability, detect redirects, and verify brand presence at scale with AI-powered analysis",
   icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' },
-    ],
+    icon: '/icon.svg',
     apple: '/icon.svg',
   },
   openGraph: {
