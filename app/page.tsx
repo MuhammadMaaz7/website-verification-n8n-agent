@@ -20,9 +20,9 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen bg-[#0a0a1a] relative overflow-hidden flex flex-col">
+    <div className="h-screen bg-[#0a0a1a] relative overflow-y-auto overflow-x-hidden flex flex-col">
       {/* Full-screen Light Pillar background */}
-      <div className="absolute inset-0 w-full h-full z-0">
+      <div className="fixed inset-0 w-full h-full z-0">
         <LightPillar
           topColor="#5227FF"
           bottomColor="#10b981"
@@ -40,7 +40,7 @@ export default function Home() {
       </div>
 
       {/* Floating glass navbar */}
-      <nav className="relative z-10 flex justify-center pt-3 sm:pt-5 px-3 sm:px-6 shrink-0" style={{ fontFamily: "'League Spartan', sans-serif" }}>
+      <nav className="sticky top-0 z-20 flex justify-center pt-3 sm:pt-5 pb-2 px-3 sm:px-6 shrink-0" style={{ fontFamily: "'League Spartan', sans-serif" }}>
         <div className="flex items-center justify-between w-full max-w-[92%] sm:max-w-2xl md:max-w-3xl px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-full border border-white/10 backdrop-blur-xl bg-white/5 shadow-lg shadow-black/10">
           <span
             className="text-white text-lg sm:text-2xl font-bold tracking-wide cursor-pointer"
@@ -56,7 +56,7 @@ export default function Home() {
       </nav>
 
       {/* Main content area */}
-      <main className="relative z-10 flex flex-col items-center justify-start flex-1 px-3 sm:px-4 overflow-y-auto">
+      <main className="relative z-10 flex flex-col items-center justify-start flex-1 px-3 sm:px-4">
         <div
           className={`transition-all duration-300 ease-in-out w-full flex flex-col items-center ${
             transitioning ? 'opacity-0 translate-y-4 scale-[0.98]' : 'opacity-100 translate-y-0 scale-100'
