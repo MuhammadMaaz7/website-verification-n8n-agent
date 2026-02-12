@@ -16,17 +16,28 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
 
   const handleManualSubmit = () => {
     if (companyName && url) {
-      onValidate([{ companyName, url }]);
+      onValidate([{ companyName, url: cleanUrl(url) }]);
       setCompanyName("");
       setUrl("");
     }
+  };
+
+  const cleanUrl = (raw: string): string => {
+    let url = raw.trim().split(/\s+/)[0]; // take only the first "word" (the actual URL)
+    if (url && !/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+    return url;
   };
 
   const handleBulkSubmit = () => {
     const lines = bulkText.trim().split("\n");
     const entries = lines
       .map(line => {
-        const [companyName, url] = line.split(",").map(s => s.trim());
+        const commaIdx = line.indexOf(",");
+        if (commaIdx === -1) return null;
+        const companyName = line.slice(0, commaIdx).trim();
+        const url = cleanUrl(line.slice(commaIdx + 1));
         return companyName && url ? { companyName, url } : null;
       })
       .filter(Boolean) as { companyName: string; url: string }[];
@@ -83,15 +94,24 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
         
         const entries = dataLines
           .map((line, index) => {
-            const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+            // Split CSV line by comma, respecting quoted fields
+            const fields = line.split(',').reduce<string[]>((acc, field) => {
+              const last = acc.length - 1;
+              if (last >= 0 && (acc[last].match(/"/g) || []).length % 2 !== 0) {
+                acc[last] += ',' + field;
+              } else {
+                acc.push(field);
+              }
+              return acc;
+            }, []);
             
-            if (!matches || matches.length < 2) {
+            if (fields.length < 2) {
               console.warn(`Skipping invalid row ${index + 2}: ${line}`);
               return null;
             }
 
-            const companyName = matches[0].replace(/^"|"$/g, '').trim();
-            const url = matches[1].replace(/^"|"$/g, '').trim();
+            const companyName = fields[0].replace(/^"|"$/g, '').trim();
+            let url = fields[1].replace(/^"|"$/g, '').trim().split(/\s+/)[0]; // take only the URL, drop trailing text
 
             if (!companyName || !url) {
               console.warn(`Skipping incomplete row ${index + 2}: missing company name or URL`);
@@ -101,6 +121,11 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
             if (!url.match(/^(https?:\/\/)?[\w\-]+(\.[\w\-]+)+/)) {
               console.warn(`Skipping invalid URL in row ${index + 2}: ${url}`);
               return null;
+            }
+
+            // Ensure URL has protocol
+            if (!/^https?:\/\//i.test(url)) {
+              url = `https://${url}`;
             }
 
             return { companyName, url };
@@ -247,7 +272,7 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
               <textarea
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
-                placeholder="Acme Corp, https://acme.com&#10;Tech Inc, https://techinc.io&#10;StartupXYZ, https://startupxyz.com"
+                placeholder="Google, google.com (new line) GitHub, github.com (new line) Microsoft, microsoft.com"
                 rows={4}
                 className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 font-mono text-xs sm:text-sm transition-all resize-none"
               />

@@ -55,153 +55,94 @@ export default function ValidationDashboard() {
     
     setResults(newResults);
 
-    // Process each entry sequentially with retry logic
-    for (let i = 0; i < newResults.length; i++) {
-      await processWithRetry(i, newResults[i]);
-
-      // Small delay between requests to avoid overwhelming the server
-      if (i < newResults.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-    }
-
-    setIsProcessing(false);
-    
-    // Show completion toast
-    const successCount = results.filter(r => r.status === "success").length;
-    const errorCount = results.filter(r => r.status === "error").length;
-    
-    if (errorCount === 0) {
-      showToast(`✓ All validations completed successfully!`, "success");
-    } else if (successCount === 0) {
-      showToast(`Unable to complete validations. Please try again.`, "error");
-    } else {
-      showToast(`Completed: ${successCount} successful, ${errorCount} failed`, "warning");
-    }
-  };
-
-  // Process single entry with retry logic
-  const processWithRetry = async (index: number, entry: ValidationResult, retryCount = 0) => {
-    const MAX_RETRIES = 2;
-    const RETRY_DELAY = 1000; // 1 second
-
-    // Update status to processing or retrying
-    setResults(prev => 
-      prev.map((r, idx) => 
-        idx === index ? { 
-          ...r, 
-          status: retryCount > 0 ? "retrying" : "processing",
-          retryCount 
-        } : r
-      )
-    );
-
-    const startTime = Date.now();
-
+    // Send all entries as a single batch request to n8n
     try {
-      // Get n8n webhook URL from environment
-      const apiUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
-      
-      if (!apiUrl) {
-        throw new Error("SERVICE_NOT_CONFIGURED");
-      }
-
+      const apiUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL!;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for batch
+
+      // Update all to processing
+      setResults(prev => prev.map(r => ({ ...r, status: "processing" as const })));
 
       const response = await fetch(apiUrl, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "application/json",
         },
-        body: JSON.stringify({
-          companyName: entry.companyName,
-          url: entry.url,
-        }),
+        body: JSON.stringify(entries),
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Log technical error for debugging
         console.error(`Backend error ${response.status}:`, await response.text().catch(() => 'Unknown error'));
         throw new Error("SERVICE_ERROR");
       }
 
       const data = await response.json();
-      const responseTime = Date.now() - startTime;
-      
-      // Handle n8n response format
-      const mappedData = mapResponseData(data, responseTime);
-      
+      const responseTime = Date.now() - Date.now(); // per-item timing not available in batch
+
+      // Handle response — expect an array of results matching entries order
+      const resultsArray = Array.isArray(data) ? data : [data];
+
       setResults(prev =>
-        prev.map((r, idx) =>
-          idx === index
-            ? {
-                ...r,
-                status: "success",
-                ...mappedData,
-              }
-            : r
-        )
+        prev.map((r, idx) => {
+          try {
+            const itemData = resultsArray[idx];
+            if (!itemData) {
+              return { ...r, status: "error" as const, error: "No result returned for this entry" };
+            }
+            const mapped = mapResponseData(itemData, responseTime);
+            return { ...r, status: "success" as const, ...mapped };
+          } catch {
+            return { ...r, status: "error" as const, error: "Invalid response for this entry" };
+          }
+        })
       );
     } catch (error) {
-      const responseTime = Date.now() - startTime;
-      
-      // Log technical error for debugging
-      console.error('Validation error:', error);
-      
-      const isTimeout = error instanceof Error && error.name === 'AbortError';
+      console.error("Batch validation error:", error);
+
+      const isTimeout = error instanceof Error && error.name === "AbortError";
       const isNetworkError = error instanceof Error && (
-        error.message.includes('fetch') || 
-        error.message.includes('network') ||
-        error.message.includes('Failed to fetch')
+        error.message.includes("fetch") ||
+        error.message.includes("network") ||
+        error.message.includes("Failed to fetch")
       );
-      const isConfigError = error instanceof Error && error.message === 'SERVICE_NOT_CONFIGURED';
-      
-      // Retry logic for network errors and timeouts (not config or service errors)
-      if ((isTimeout || isNetworkError) && retryCount < MAX_RETRIES && !isConfigError) {
-        console.log(`Retrying ${entry.companyName} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
-        return processWithRetry(index, entry, retryCount + 1);
-      }
 
-      // User-friendly error messages
-      let userMessage = "Unable to validate this website";
-      
-      if (isConfigError) {
-        userMessage = "Service not configured";
-      } else if (isTimeout) {
-        userMessage = "Validation is taking too long. Please try again.";
-      } else if (isNetworkError) {
-        userMessage = "Connection issue. Please check your internet.";
-      } else if (error instanceof Error && error.message === 'SERVICE_ERROR') {
-        userMessage = "Service temporarily unavailable";
-      } else if (error instanceof Error && error.message.includes('Invalid response')) {
-        userMessage = "Received unexpected response";
-      }
-
-      if (retryCount > 0) {
-        userMessage += ` (tried ${retryCount + 1} ${retryCount === 0 ? 'time' : 'times'})`;
-      }
+      let userMessage = "Unable to validate websites";
+      if (isTimeout) userMessage = "Validation timed out. Please try again.";
+      else if (isNetworkError) userMessage = "Connection issue. Please check your internet.";
+      else if (error instanceof Error && error.message === "SERVICE_ERROR") userMessage = "Service temporarily unavailable";
 
       setResults(prev =>
-        prev.map((r, idx) =>
-          idx === index
-            ? {
-                ...r,
-                status: "error",
-                error: userMessage,
-                responseTime,
-                isReachable: false,
-                brandPresence: 0,
-              }
-            : r
-        )
+        prev.map(r => ({
+          ...r,
+          status: "error" as const,
+          error: userMessage,
+          isReachable: false,
+          brandPresence: 0,
+        }))
       );
     }
+
+    setIsProcessing(false);
+    
+    // Show completion toast (read latest results via callback)
+    setResults(prev => {
+      const successCount = prev.filter(r => r.status === "success").length;
+      const errorCount = prev.filter(r => r.status === "error").length;
+
+      if (errorCount === 0) {
+        showToast(`✓ All validations completed successfully!`, "success");
+      } else if (successCount === 0) {
+        showToast(`Unable to complete validations. Please try again.`, "error");
+      } else {
+        showToast(`Completed: ${successCount} successful, ${errorCount} failed`, "warning");
+      }
+      return prev;
+    });
   };
 
   // Map n8n response format to frontend format
