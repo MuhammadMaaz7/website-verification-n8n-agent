@@ -25,7 +25,7 @@ export default function Home() {
       <div className="fixed inset-0 w-full h-full z-0">
         <LightPillar
           topColor="#10B981"
-          bottomColor="#101eb9"
+          bottomColor="#edf8f2"
           intensity={1}
           rotationSpeed={0.3}
           glowAmount={0.002}
