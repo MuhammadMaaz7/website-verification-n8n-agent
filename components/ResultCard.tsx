@@ -32,17 +32,17 @@ export default function ResultCard({ result }: ResultCardProps) {
   return (
     <div
       className={cn(
-        "border rounded-xl p-3 sm:p-5 transition-all backdrop-blur-md",
+        "border rounded-lg sm:rounded-xl p-2.5 sm:p-4 lg:p-5 transition-all backdrop-blur-md",
         getStatusColor()
       )}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 sm:gap-3 mb-1.5 sm:mb-2">
+          <div className="flex items-center gap-1.5 sm:gap-3 mb-1 sm:mb-2">
             {getStatusIndicator()}
-            <h3 className="font-semibold text-white text-sm sm:text-lg truncate">{result.companyName}</h3>
+            <h3 className="font-semibold text-white text-xs sm:text-base lg:text-lg truncate">{result.companyName}</h3>
           </div>
-          <p className="text-xs sm:text-sm text-white/40 truncate font-mono">{result.url}</p>
+          <p className="text-[10px] sm:text-sm text-white/40 truncate font-mono">{result.url}</p>
         </div>
         {(result.status === "processing" || result.status === "retrying") && (
           <div className="flex items-center gap-1.5 sm:gap-2 text-yellow-400 text-xs sm:text-sm flex-shrink-0">

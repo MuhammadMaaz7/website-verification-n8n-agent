@@ -22,36 +22,36 @@ export default function ResultsSection({ results }: ResultsSectionProps) {
 
   return (
     <div className="relative w-full">
-      <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 lg:p-8">
+      <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-5 lg:p-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">Results</h2>
-            <p className="text-white/40 text-xs sm:text-sm">Validation results and analytics</p>
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2 tracking-tight">Results</h2>
+            <p className="text-white/40 text-[10px] sm:text-xs lg:text-sm">Validation results and analytics</p>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-1.5 sm:gap-2 w-full sm:w-auto">
             <button 
               onClick={() => exportToCSV(results)}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-full text-xs sm:text-sm font-medium text-white/70 border border-white/15 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-sm font-medium text-white/70 border border-white/15 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
             >
               Export CSV
             </button>
             <button 
               onClick={() => exportToJSON(results)}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-full text-xs sm:text-sm font-medium text-white/70 border border-white/15 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-sm font-medium text-white/70 border border-white/15 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
             >
               Export JSON
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-3 mb-3 sm:mb-6">
           <StatCard label="Total" value={stats.total} color="white" />
           <StatCard label="Success" value={stats.success} color="green" />
           <StatCard label="Failed" value={stats.failed} color="red" />
           <StatCard label="Processing" value={stats.processing} color="yellow" />
         </div>
 
-        <div className="space-y-2 sm:space-y-3 max-h-[500px] sm:max-h-[600px] overflow-y-auto custom-scrollbar">
+        <div className="space-y-1.5 sm:space-y-3 max-h-[400px] sm:max-h-[500px] lg:max-h-[600px] overflow-y-auto custom-scrollbar">
           {results.map((result) => (
             <ResultCard key={result.id} result={result} />
           ))}
@@ -70,9 +70,9 @@ function StatCard({ label, value, color }: { label: string; value: number; color
   };
 
   return (
-    <div className={`border rounded-xl p-3 sm:p-4 text-center backdrop-blur-md ${colors[color] || colors.white}`}>
-      <div className="text-2xl sm:text-3xl font-bold mb-0.5 sm:mb-1">{value}</div>
-      <div className="text-[10px] sm:text-xs opacity-60 uppercase tracking-wide">{label}</div>
+    <div className={`border rounded-lg sm:rounded-xl p-2 sm:p-4 text-center backdrop-blur-md ${colors[color] || colors.white}`}>
+      <div className="text-lg sm:text-2xl lg:text-3xl font-bold mb-0.5 sm:mb-1">{value}</div>
+      <div className="text-[9px] sm:text-xs opacity-60 uppercase tracking-wide">{label}</div>
     </div>
   );
 }
