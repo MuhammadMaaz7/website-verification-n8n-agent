@@ -62,86 +62,78 @@ export default function ValidationDashboard() {
     
     setResults(newResults);
 
-    // Send all entries as a single batch request to n8n
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL!;
+    const apiUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL!;
+    const TIMEOUT_MS = 60000; // 60-second window
+
+    // Update all to processing
+    setResults(prev => prev.map(r => ({ ...r, status: "processing" as const })));
+
+    // Fire all requests in parallel — each result updates individually as it resolves
+    const promises = entries.map((entry, idx) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for batch
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-      // Update all to processing
-      setResults(prev => prev.map(r => ({ ...r, status: "processing" as const })));
-
-      const response = await fetch(apiUrl, {
+      return fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
         },
-        body: JSON.stringify(entries),
+        body: JSON.stringify(entry),
         signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        console.error(`Backend error ${response.status}:`, await response.text().catch(() => 'Unknown error'));
-        throw new Error("SERVICE_ERROR");
-      }
-
-      const data = await response.json();
-
-      // n8n returns: [{ success, total_processed, data: [...items...] }]
-      // Unwrap to get the items array
-      let items: any[] = [];
-      if (Array.isArray(data) && data.length > 0 && data[0]?.data) {
-        items = data[0].data;
-      } else if (Array.isArray(data)) {
-        items = data;
-      } else if (data?.data && Array.isArray(data.data)) {
-        items = data.data;
-      } else {
-        items = [data];
-      }
-
-      setResults(prev =>
-        prev.map((r, idx) => {
-          try {
-            const itemData = items[idx];
-            if (!itemData) {
-              return { ...r, status: "error" as const, error: "No result returned for this entry" };
-            }
-            const mapped = mapResponseData(itemData);
-            return { ...r, status: "success" as const, ...mapped };
-          } catch {
-            return { ...r, status: "error" as const, error: "Invalid response for this entry" };
+      })
+        .then(async (response) => {
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            console.error(`Backend error ${response.status} for ${entry.companyName}`);
+            throw new Error("SERVICE_ERROR");
           }
+          return response.json();
         })
-      );
-    } catch (error) {
-      console.error("Batch validation error:", error);
+        .then((data) => {
+          // Unwrap n8n response: could be [{ data: [...] }], { data: [...] }, or direct item
+          let item: any = data;
+          if (Array.isArray(data) && data.length > 0) {
+            item = data[0]?.data?.[0] ?? data[0];
+          } else if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+            item = data.data[0];
+          }
 
-      const isTimeout = error instanceof Error && error.name === "AbortError";
-      const isNetworkError = error instanceof Error && (
-        error.message.includes("fetch") ||
-        error.message.includes("network") ||
-        error.message.includes("Failed to fetch")
-      );
+          const mapped = mapResponseData(item);
+          setResults(prev =>
+            prev.map((r, i) =>
+              i === idx ? { ...r, status: "success" as const, ...mapped } : r
+            )
+          );
+        })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          console.error(`Validation error for ${entry.companyName}:`, error);
 
-      let userMessage = "Unable to validate websites";
-      if (isTimeout) userMessage = "Validation timed out. Please try again.";
-      else if (isNetworkError) userMessage = "Connection issue. Please check your internet.";
-      else if (error instanceof Error && error.message === "SERVICE_ERROR") userMessage = "Service temporarily unavailable";
+          const isTimeout = error instanceof Error && error.name === "AbortError";
+          const isNetworkError = error instanceof Error && (
+            error.message.includes("fetch") ||
+            error.message.includes("network") ||
+            error.message.includes("Failed to fetch")
+          );
 
-      setResults(prev =>
-        prev.map(r => ({
-          ...r,
-          status: "error" as const,
-          error: userMessage,
-          isReachable: false,
-          brandPresence: 0,
-        }))
-      );
-    }
+          let userMessage = "Unable to validate this website";
+          if (isTimeout) userMessage = "Validation timed out (60s). Please try again.";
+          else if (isNetworkError) userMessage = "Connection issue. Please check your internet.";
+          else if (error instanceof Error && error.message === "SERVICE_ERROR") userMessage = "Service temporarily unavailable";
+
+          setResults(prev =>
+            prev.map((r, i) =>
+              i === idx
+                ? { ...r, status: "error" as const, error: userMessage, isReachable: false }
+                : r
+            )
+          );
+        });
+    });
+
+    // Wait for all requests to settle (success or fail)
+    await Promise.allSettled(promises);
 
     setIsProcessing(false);
     
