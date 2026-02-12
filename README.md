@@ -108,5 +108,3 @@ Add environment variable in Vercel dashboard:
 MIT License
 
 ---
-
-**Made with ❤️ for hackathons**
