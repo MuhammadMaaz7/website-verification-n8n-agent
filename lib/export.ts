@@ -5,10 +5,13 @@ export function exportToCSV(results: ValidationResult[]) {
     "Company Name",
     "URL",
     "Status",
-    "Reachable",
+    "Verdict",
+    "Risk Score",
+    "Brand Match",
+    "Confidence Score",
+    "Detected Name",
+    "Summary",
     "Redirect URL",
-    "Brand Presence %",
-    "Response Time (ms)",
     "Error"
   ];
 
@@ -16,10 +19,13 @@ export function exportToCSV(results: ValidationResult[]) {
     r.companyName,
     r.url,
     r.status,
-    r.isReachable ? "Yes" : "No",
+    r.verdict || "N/A",
+    r.riskScore?.toString() ?? "N/A",
+    r.dataJson?.brand_match !== undefined ? (r.dataJson.brand_match ? "Yes" : "No") : "N/A",
+    r.dataJson?.confidence_score?.toString() ?? "N/A",
+    r.dataJson?.detected_name || "N/A",
+    r.dataJson?.summary || "N/A",
     r.redirectUrl || "N/A",
-    r.brandPresence?.toString() || "N/A",
-    r.responseTime?.toString() || "N/A",
     r.error || "N/A"
   ]);
 

@@ -14,8 +14,15 @@ export interface ValidationResult {
   status: "pending" | "processing" | "success" | "error" | "retrying";
   isReachable?: boolean;
   redirectUrl?: string;
-  brandPresence?: number;
-  responseTime?: number;
+  verdict?: string;
+  riskScore?: number;
+  dataJson?: {
+    brand_match?: boolean;
+    confidence_score?: number;
+    summary?: string;
+    detected_name?: string;
+    url?: string;
+  };
   error?: string;
   retryCount?: number;
 }
@@ -172,9 +179,12 @@ export default function ValidationDashboard() {
 
       return {
         isReachable: isVerified,
+        url: item.url || item.original_url,
         redirectUrl: redirected ? item.url : undefined,
-        brandPresence: dataJson.confidence_score ?? (isVerified ? 100 : 0),
-        responseTime: 0,
+        verdict: item.verdict ?? "UNKNOWN",
+        riskScore: item.risk_score ?? 0,
+        dataJson: dataJson,
+        companyName: item.company_name || item.companyName,
         error: isVerified ? undefined : (dataJson.summary ?? item.verdict ?? "Verification failed"),
       };
     } catch (error) {

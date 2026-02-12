@@ -67,33 +67,74 @@ export default function ResultCard({ result }: ResultCardProps) {
               </div>
             </div>
           )}
+
+          {/* Verdict & Risk Score */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-            {result.brandPresence !== undefined && (
+            {result.verdict && (
               <div className="backdrop-blur-md bg-white/5 rounded-xl p-2.5 sm:p-3 border border-white/10">
-                <div className="text-[10px] sm:text-xs text-white/40 mb-1.5 sm:mb-2">Brand Presence</div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-white/10 rounded-full h-1.5 sm:h-2">
-                    <div
-                      style={{ width: `${result.brandPresence}%` }}
-                      className={cn(
-                        "h-1.5 sm:h-2 rounded-full transition-all duration-700 ease-out",
-                        result.brandPresence > 70 ? "bg-green-400" : 
-                        result.brandPresence > 40 ? "bg-yellow-400" : 
-                        "bg-red-400"
-                      )}
-                    />
-                  </div>
-                  <span className="text-white font-bold text-sm sm:text-lg">{result.brandPresence}%</span>
+                <div className="text-[10px] sm:text-xs text-white/40 mb-1.5 sm:mb-2">Verdict</div>
+                <div className={cn(
+                  "font-bold text-sm sm:text-lg",
+                  result.verdict === "VERIFIED" ? "text-green-400" : "text-red-400"
+                )}>
+                  {result.verdict}
                 </div>
               </div>
             )}
-            {result.responseTime !== undefined && (
+            {result.riskScore !== undefined && (
               <div className="backdrop-blur-md bg-white/5 rounded-xl p-2.5 sm:p-3 border border-white/10">
-                <div className="text-[10px] sm:text-xs text-white/40 mb-1.5 sm:mb-2">Response Time</div>
-                <div className="text-white font-bold text-sm sm:text-lg">{result.responseTime}ms</div>
+                <div className="text-[10px] sm:text-xs text-white/40 mb-1.5 sm:mb-2">Risk Score</div>
+                <div className={cn(
+                  "font-bold text-sm sm:text-lg",
+                  result.riskScore === 0 ? "text-green-400" :
+                  result.riskScore <= 50 ? "text-yellow-400" : "text-red-400"
+                )}>
+                  {result.riskScore}
+                </div>
               </div>
             )}
           </div>
+
+          {/* Data JSON details */}
+          {result.dataJson && (
+            <div className="backdrop-blur-md bg-white/5 rounded-xl p-2.5 sm:p-3 border border-white/10 space-y-2">
+              <div className="text-[10px] sm:text-xs text-white/40">Analysis Details</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:text-sm">
+                {result.dataJson.detected_name && (
+                  <div className="flex justify-between">
+                    <span className="text-white/50">Detected Name</span>
+                    <span className="text-white font-medium">{result.dataJson.detected_name}</span>
+                  </div>
+                )}
+                {result.dataJson.brand_match !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-white/50">Brand Match</span>
+                    <span className={result.dataJson.brand_match ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
+                      {result.dataJson.brand_match ? "Yes" : "No"}
+                    </span>
+                  </div>
+                )}
+                {result.dataJson.confidence_score !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-white/50">Confidence</span>
+                    <span className="text-white font-medium">{result.dataJson.confidence_score}%</span>
+                  </div>
+                )}
+                {result.dataJson.url && (
+                  <div className="flex justify-between">
+                    <span className="text-white/50">Resolved URL</span>
+                    <span className="text-white/70 font-mono text-[10px] sm:text-xs truncate max-w-[180px]">{result.dataJson.url}</span>
+                  </div>
+                )}
+              </div>
+              {result.dataJson.summary && (
+                <div className="mt-2 pt-2 border-t border-white/10">
+                  <div className="text-[10px] sm:text-xs text-white/40 mb-1">Summary</div>
+                  <p className="text-[10px] sm:text-xs text-white/70 leading-relaxed">{result.dataJson.summary}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
