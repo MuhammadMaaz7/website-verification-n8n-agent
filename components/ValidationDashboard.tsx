@@ -82,19 +82,28 @@ export default function ValidationDashboard() {
       }
 
       const data = await response.json();
-      const responseTime = Date.now() - Date.now(); // per-item timing not available in batch
 
-      // Handle response — expect an array of results matching entries order
-      const resultsArray = Array.isArray(data) ? data : [data];
+      // n8n returns: [{ success, total_processed, data: [...items...] }]
+      // Unwrap to get the items array
+      let items: any[] = [];
+      if (Array.isArray(data) && data.length > 0 && data[0]?.data) {
+        items = data[0].data;
+      } else if (Array.isArray(data)) {
+        items = data;
+      } else if (data?.data && Array.isArray(data.data)) {
+        items = data.data;
+      } else {
+        items = [data];
+      }
 
       setResults(prev =>
         prev.map((r, idx) => {
           try {
-            const itemData = resultsArray[idx];
+            const itemData = items[idx];
             if (!itemData) {
               return { ...r, status: "error" as const, error: "No result returned for this entry" };
             }
-            const mapped = mapResponseData(itemData, responseTime);
+            const mapped = mapResponseData(itemData);
             return { ...r, status: "success" as const, ...mapped };
           } catch {
             return { ...r, status: "error" as const, error: "Invalid response for this entry" };
@@ -145,39 +154,31 @@ export default function ValidationDashboard() {
     });
   };
 
-  // Map n8n response format to frontend format
-  const mapResponseData = (data: any, responseTime: number) => {
+  // Map a single n8n result item to frontend format
+  const mapResponseData = (item: any) => {
     try {
-      // n8n format (has 'data' array)
-      if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-        const item = data.data[0];
-        return {
-          isReachable: item.status?.live ?? false,
-          redirectUrl: item.technical?.redirected ? item.technical?.final_url : undefined,
-          brandPresence: item.status?.confidence ?? 0,
-          responseTime: responseTime,
-          error: item.verdict === "SUCCESS" ? undefined : item.ai_evidence,
-        };
+      // Parse data_json if it's a string
+      let dataJson: any = {};
+      if (item.data_json) {
+        try {
+          dataJson = typeof item.data_json === "string" ? JSON.parse(item.data_json) : item.data_json;
+        } catch {
+          console.warn("Failed to parse data_json:", item.data_json);
+        }
       }
-      
-      // Alternative n8n format (direct fields)
-      if (data.verification_results) {
-        return {
-          isReachable: data.verification_results?.is_live ?? false,
-          redirectUrl: data.technical_metadata?.redirect_detected 
-            ? data.technical_metadata?.final_url 
-            : undefined,
-          brandPresence: data.ai_insight?.confidence ?? 0,
-          responseTime: responseTime,
-          error: data.error,
-        };
-      }
-      
-      // Log unexpected format for debugging
-      console.error('Unexpected response format:', data);
-      throw new Error("Invalid response format from backend. Please check n8n workflow configuration.");
+
+      const isVerified = item.verdict === "VERIFIED";
+      const redirected = item.url && item.original_url && item.url !== item.original_url;
+
+      return {
+        isReachable: isVerified,
+        redirectUrl: redirected ? item.url : undefined,
+        brandPresence: dataJson.confidence_score ?? (isVerified ? 100 : 0),
+        responseTime: 0,
+        error: isVerified ? undefined : (dataJson.summary ?? item.verdict ?? "Verification failed"),
+      };
     } catch (error) {
-      console.error('Response mapping error:', error);
+      console.error("Response mapping error:", error);
       throw new Error("Invalid response format");
     }
   };
