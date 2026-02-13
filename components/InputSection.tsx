@@ -225,7 +225,7 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                   </label>
                 </div>
 
-                <a
+                {/* <a
                   href="/sample-companies.csv"
                   download
                   className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[10px] sm:text-sm font-medium text-white/70 border border-white/15 backdrop-blur-md bg-white/5 hover:bg-white/10 hover:text-white transition-all w-full sm:w-auto justify-center"
@@ -234,7 +234,7 @@ export default function InputSection({ onValidate, isProcessing }: InputSectionP
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Sample CSV
-                </a>
+                </a> */}
               </div>
             </div>
           )}
